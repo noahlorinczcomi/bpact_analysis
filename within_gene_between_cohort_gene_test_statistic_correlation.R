@@ -1,0 +1,43 @@
+library(mvnfast)
+m=100
+mcausal=3
+causalix=floor(seq(1,m,length.out=mcausal))
+h2=0.001
+h2gene=0
+R=0.5^toeplitz(0:(m-1))
+delta=0.5
+n1=50000
+n2=50000
+rho_overlaps=c(0,0.1,0.5,0.9,1.0)
+n01s=rho_overlaps*round(n1)
+rho=0.5
+niter=10000
+Z0=Z00=matrix(0,nr=m,nc=2)
+Z0[causalix,]=sqrt(h2gene/mcausal)
+Z00[causalix,]=sqrt(h2/mcausal)
+e0=m
+v0=2*sum(diag(R%*%R))
+e1=m+sum(n1*Z00[,1]^2)
+v1=v0+4*n1*t(Z00[,1])%*%R%*%Z00[,1]
+beta0=e0/v0
+alpha0=e0*beta0
+beta1=e1/v1
+alpha1=e1*beta1
+rhos=esums=c()
+for(i in 1:length(n01s)) {
+  n01=n01s[i]
+  SigmaOverlap=matrix(c(1,n01/sqrt(n1*n2)*rho,n01/sqrt(n1*n2)*rho,1),2,2)
+  K=kronecker(SigmaOverlap,R)
+  Z=rmvn(niter,c(Z0),K)
+  T1=rowSums(Z[,1:m]^2)
+  T2=rowSums(Z[,-c(1:m)]^2)
+  cat('Empirical correlation: ',round(cor(T1,T2),2),',','Theoretical correlation: ',round(SigmaOverlap[1,2]^2,2),'\n',sep='')
+  f0_1=dgamma(T1,shape=alpha0,rate=beta0)
+  f0_2=dgamma(T2,shape=alpha0,rate=beta0)
+  f1_1=dgamma(T1,shape=alpha1,rate=beta1)
+  f1_2=dgamma(T2,shape=alpha1,rate=beta1)
+  p1=(1-delta)*f1_1/((1-delta)*f1_1+delta*f0_1)
+  p2=(1-delta)*f1_2/((1-delta)*f1_2+delta*f0_2)
+  rhos[i]=cor(p1,p2)
+  esums[i]=mean(p1*p2)
+}
