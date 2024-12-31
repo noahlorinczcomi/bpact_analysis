@@ -1,0 +1,23 @@
+m=100
+R=0.5^toeplitz(0:(m-1))
+h2=0.001
+mcausal=100
+b=rep(0,m)
+b[1:mcausal]=sqrt(h2/mcausal)
+ns=seq(30000,250000,10000)
+pow=c()
+for(i in 1:length(ns)) {
+  z=sqrt(ns[i])*b
+  e0=m
+  v0=2*sum(diag(R%*%R))
+  e1=m+sum(z^2)
+  v1=v0+4*t(z)%*%R%*%z
+  beta0=e0/v0
+  alpha0=e0*beta0
+  beta1=e1/v1
+  alpha1=e1*beta1
+  q0=qgamma(1-0.05/12727,shape=alpha0,rate=beta0)
+  pow[i]=pgamma(q0,shape=alpha1,rate=beta1,lower.tail=FALSE)
+}
+plot(sqrt(ns),pow,type='l',xlab=expression(sqrt(N)),ylab=expression(gamma[k]))
+lines(x=range(sqrt(ns)),y=range(pow),lty=2)
